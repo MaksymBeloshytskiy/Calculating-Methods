@@ -1,0 +1,176 @@
+classdef app1 < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                        matlab.ui.Figure
+        XTextArea                       matlab.ui.control.TextArea
+        XTextAreaLabel                  matlab.ui.control.Label
+        InputdatafromtxtfileButton      matlab.ui.control.Button
+        ChoosemethodDropDown            matlab.ui.control.DropDown
+        ChoosemethodDropDownLabel       matlab.ui.control.Label
+        InputtheequationEditField       matlab.ui.control.EditField
+        InputtheequationEditFieldLabel  matlab.ui.control.Label
+        SolveButton                     matlab.ui.control.Button
+        NumEquations                    double % Store the number of equations
+        CoefficientMatrix               double % Store the coefficient matrix
+        Vector                          double % Store the vector
+    end
+
+    % Callback functions for button actions
+    methods (Access = private)
+        % Callback function for SolveButton
+        function solveButtonPushed(app, ~)
+            % Get the selected method from the dropdown menu
+            method = app.ChoosemethodDropDown.Value;
+
+            % Check if the selected method supports the number of equations
+            if strcmp(method, 'Gauss Method') && app.NumEquations > 3
+                % Display a warning message if the selected method doesn't support the number of equations
+                warning('Gauss method may not be suitable for a large number of equations. Consider choosing another method.');
+            end
+
+            % Call the corresponding method function
+            switch method
+                case 'Cramer''s Method'
+                    X = app.cramer_method(app.CoefficientMatrix, app.Vector);
+                case 'Gauss Method'
+                    X = app.gauss_method(app.CoefficientMatrix, app.Vector);
+                case 'Seidel Method'
+                    % You need to provide tolerance and max_iterations as arguments
+                    X = app.seidel_method(app.CoefficientMatrix, app.Vector, tolerance, max_iterations);
+                case 'Gauss-Jordan Method'
+                    X = app.gauss_jordan_method(app.CoefficientMatrix, app.Vector);
+                case 'Jacobi Method'
+                    % You need to provide tolerance and max_iterations as arguments
+                    X = app.jacobi_method(app.CoefficientMatrix, app.Vector, tolerance, max_iterations);
+            end
+
+            % Display the result in the XTextArea
+            app.XTextArea.Value = num2str(X);
+        end
+
+        % Callback function for InputdatafromtxtfileButton
+        function inputFromFileButtonPushed(app, ~)
+            % Open a dialog box to select the text file
+            [filename, filepath] = uigetfile('*.txt', 'Select the text file');
+
+            % Check if the user cancelled the operation
+            if isequal(filename, 0)
+                disp('Operation cancelled');
+                return;
+            end
+
+            % Read the content of the text file
+            fileContent = fileread(fullfile(filepath, filename));
+
+            % Split the file content into lines
+            lines = strsplit(fileContent, '\n');
+
+            % Extract the number of equations from the first line
+            app.NumEquations = str2double(lines{1});
+
+            % Extract the coefficient matrix and vector from the remaining lines
+            app.CoefficientMatrix = zeros(app.NumEquations, app.NumEquations);
+            app.Vector = zeros(app.NumEquations, 1);
+            for i = 2:app.NumEquations+1
+                % Split each line into individual elements
+                elements = str2double(strsplit(lines{i}));
+
+                % Extract the coefficients (excluding the last element which is the vector entry)
+                app.CoefficientMatrix(i-1, :) = elements(1:end-1);
+
+                % Extract the vector entry
+                app.Vector(i-1) = elements(end);
+            end
+
+            % Update the input equation edit field with the data from the file
+            app.InputtheequationEditField.Value = fileContent;
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 640 480];
+            app.UIFigure.Name = 'MATLAB App';
+
+            % Create SolveButton
+            app.SolveButton = uibutton(app.UIFigure, 'push');
+            app.SolveButton.Position = [271 27 100 23];
+            app.SolveButton.Text = 'Solve';
+            app.SolveButton.ButtonPushedFcn = @app.solveButtonPushed;
+
+            % Create InputtheequationEditFieldLabel
+            app.InputtheequationEditFieldLabel = uilabel(app.UIFigure);
+            app.InputtheequationEditFieldLabel.HorizontalAlignment = 'right';
+            app.InputtheequationEditFieldLabel.Position = [266 396 101 22];
+            app.InputtheequationEditFieldLabel.Text = 'Input the equation';
+
+            % Create InputtheequationEditField
+            app.InputtheequationEditField = uieditfield(app.UIFigure, 'text');
+            app.InputtheequationEditField.Position = [154 266 326 122];
+
+            % Create ChoosemethodDropDownLabel
+            app.ChoosemethodDropDownLabel = uilabel(app.UIFigure);
+            app.ChoosemethodDropDownLabel.HorizontalAlignment = 'right';
+            app.ChoosemethodDropDownLabel.Position = [218 428 90 22];
+            app.ChoosemethodDropDownLabel.Text = 'Choose method';
+
+            % Create ChoosemethodDropDown
+            app.ChoosemethodDropDown = uidropdown(app.UIFigure);
+            app.ChoosemethodDropDown.Items = {'Cramer''s Method', 'Gauss Method', 'Seidel Method', 'Gauss-Jordan Method', 'Jacobi Method'};
+            app.ChoosemethodDropDown.Position = [323 428 100 22];
+            app.ChoosemethodDropDown.Value = 'Cramer''s Method';
+
+            % Create InputdatafromtxtfileButton
+            app.InputdatafromtxtfileButton = uibutton(app.UIFigure, 'push');
+            app.InputdatafromtxtfileButton.Position = [254 59 134 23];
+            app.InputdatafromtxtfileButton.Text = 'Input data from .txt file';
+            app.InputdatafromtxtfileButton.ButtonPushedFcn = @app.inputFromFileButtonPushed;
+
+            % Create XTextAreaLabel
+            app.XTextAreaLabel = uilabel(app.UIFigure);
+            app.XTextAreaLabel.HorizontalAlignment = 'right';
+            app.XTextAreaLabel.Position = [263 171 25 22];
+            app.XTextAreaLabel.Text = 'X:';
+
+            % Create XTextArea
+            app.XTextArea = uitextarea(app.UIFigure);
+            app.XTextArea.HorizontalAlignment = 'center';
+            app.XTextArea.Position = [303 109 68 145];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = app1
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
