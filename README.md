@@ -4,8 +4,8 @@ to make YOUR life less painful :)
 
 You can freely use my code, but do not forget about Academic Honesty.
 
-                        "Math can describe particularly every thing
-                         in our life, but not peoples mind about 
-                         Calculus"
-                         
-                                                @Maksym Beloshytskyi
+                                  "Math can describe particularly every thing
+                                   in our life, but not peoples mind about 
+                                   Calculus"
+                                   
+                                                          @Maksym Beloshytskyi
